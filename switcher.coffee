@@ -22,6 +22,7 @@ window.ViewSwitcher = ( options ) ->
   initialView = options.initialView
   useHistory = options.useHistory
   onFinish = options.onFinish
+  timedOffsets = options.timedOffsets 
 
   exit = options.exit or defaultTransitions.exit
   prepare = options.prepare or defaultTransitions.prepare
@@ -64,12 +65,20 @@ window.ViewSwitcher = ( options ) ->
     cleanup = ( callback ) ->
       state.pastViews.push( state.activeView )
       state.activeView = incomingView
-      callback()
+      callback() if callback
 
-    boundCleanup = cleanup.bind(null, onFinish )
-    boundEnter = enter.bind( container, incomingView, boundCleanup )
-    boundPrepare = prepare.bind( container, state.activeView, incomingView, boundEnter )
-    exit.bind( container, state.activeView, boundPrepare )()
+
+    if timedOffsets
+      setTimeout exit.bind( container, incomingView, $.noop ), options.exitDelay
+      setTimeout prepare.bind( container, state.activeView, incomingView, $.noop ), options.exitDelay + options.prepareDelay
+      setTimeout enter.bind( container, incomingView, $.noop ), options.exitDelay + options.prepareDelay + options.enterDelay
+      setTimeout cleanup.bind(null, onFinish ), options.exitDelay + options.prepareDelay + options.enterDelay
+
+    else
+      boundCleanup = cleanup.bind(null, onFinish )
+      boundEnter = enter.bind( container, incomingView, boundCleanup )
+      boundPrepare = prepare.bind( container, state.activeView, incomingView, boundEnter )
+      exit.bind( container, state.activeView, boundPrepare )()
 
   switchView.views = ->
     return views

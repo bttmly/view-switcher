@@ -1,0 +1,113 @@
+<html>
+<head>
+  <title>ViewSwitcher</title>
+</head>
+<style>
+
+  *,
+  *:before,
+  *:after {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: "Avenir LT Std", "Helvetica Neue", sans-serif;
+  }
+
+  .wrapper {
+    width: 80%;
+    margin: 2rem auto;
+    background: #eee;
+  }
+
+  .view-container {
+    background: #f5f5f5;
+    border: 1px solid #666;
+    padding: 2rem;
+  }
+
+  .view-element {
+    display: none;
+    padding: 2rem;
+    min-height: 4rem;
+    width: 100%;
+    color: white;
+    text-align: center;
+  }
+
+  #view1 {
+    background: #e74c3c;
+    height: 8rem;
+  }
+
+  #view2 {
+    background: #e67e22;
+    height: 20rem;
+  }
+
+  #view3 {
+    background: #f1c40f;
+    height: 12rem;
+  }
+
+  #view4 {
+    background: #2ecc71;
+    height: 16rem;
+  }
+
+</style>
+
+<body>
+
+  <div class="wrapper">
+
+    <div class="view-container">
+
+      <div class="view-element" id="view1">
+        <h2>View 1</h2>
+      </div>
+
+      <div class="view-element" id="view2">
+        <h2>View 2</h2>
+      </div>
+
+      <div class="view-element" id="view3">
+        <h2>View 3</h2>
+      </div>
+
+      <div class="view-element" id="view4">
+        <h2>View 4</h2>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="switcher.js"></script>
+  <script>
+    $(function(){
+      var options = {};
+      options.views = $( ".view-element" );
+      options.container = $( ".view-container" );
+      options.initialView = "view1"
+      options.onFinish = function() { console.log( "View switch complete." ) };
+
+      var switcher = ViewSwitcher( options );
+
+      var counter = 1;
+      var interval = setInterval(function(){
+        var name = "view" + counter;
+        console.log( "Switching to: " + name );
+        switcher( name );
+        counter += 1;
+        if ( counter > 4 ) {
+          counter = 1
+        }
+      }, 5000)
+
+    });
+  </script>
+
+</body>
+</html>

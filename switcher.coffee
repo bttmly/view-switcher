@@ -4,16 +4,16 @@ window.ViewSwitcher = ( options ) ->
   defaultTransitions = 
     exit : ( exitingView, callback ) ->
       this.height( this.height() )
-      exitingView.fadeOut 1000, ->
+      exitingView.fadeOut 500, ->
         callback()
     prepare : ( exitingView, enteringView, callback ) ->
       newHeight = enteringView.outerHeight() + parseInt(this.css("padding-top"), 10) + parseInt(this.css("padding-bottom"), 10)
       this.animate
         height : newHeight
-      , 1000, ->
+      , 500, ->
         callback()
     enter : ( enteringView, callback ) ->
-      enteringView.fadeIn 1000, ->
+      enteringView.fadeIn 500, ->
         callback()
 
   rawViews = options.views
@@ -29,14 +29,13 @@ window.ViewSwitcher = ( options ) ->
   enter = options.enter or defaultTransitions.enter
 
   views = {}
-
   views.selectView = ( name ) ->
+
     return ( this[name] or $( "" ) )
 
   views.addView = ( view ) ->
     view = $( view )
     name = view.attr( attrIdentifier )
-    console.log name
     if this[name]
       console.error( "A view or method named #{name} is already registered on this ViewSwitcher")
     else
@@ -54,6 +53,14 @@ window.ViewSwitcher = ( options ) ->
   else if rawViews.substr
     views.addView( rawViews )
 
+  hub = $({})
+  _on = ->
+    hub.on.apply( hub, arguments )
+  _off = ->
+    hub.off.apply( hub, arguments )
+  _trigger = ->
+    hub.trigger.apply( hub, arguments )
+
   state =
     activeView : views[initialView]
     pastViews : []
@@ -65,8 +72,7 @@ window.ViewSwitcher = ( options ) ->
     cleanup = ( callback ) ->
       state.pastViews.push( state.activeView )
       state.activeView = incomingView
-      callback() if callback
-
+      _trigger( "viewRender", state.activeView )
 
     if timedOffsets
       setTimeout exit.bind( container, incomingView, $.noop ), options.exitDelay
@@ -84,12 +90,16 @@ window.ViewSwitcher = ( options ) ->
     return views
 
   switchView.addView = ( view ) ->
-    views.addView( view )
+    return views.addView( view )
 
   switchView.selectView = ( name ) ->
-    views.selectById( name )
+    return views.selectById( name )
 
   switchView.removeView = ( name ) ->
-    views.removeView( name )
+    return views.removeView( name )
+
+  switchView.on = _on
+  switchView.off = _off
+  switchView.trigger = _trigger
 
   return switchView

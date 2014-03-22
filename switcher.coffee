@@ -62,29 +62,32 @@ window.ViewSwitcher = ( options ) ->
     hub.trigger.apply( hub, arguments )
 
   state =
-    activeView : views[initialView]
+    activeView : $("")
     pastViews : []
 
-  switchView = ( incomingViewName ) ->
+  finishRender = ( incomingView ) ->
+    state.pastViews.push( state.activeView )
+    state.activeView = incomingView
+    _trigger( "renderComplete", state.activeView )
 
+  switchView = ( incomingViewName ) ->
+    
     incomingView = views[incomingViewName]
 
-    cleanup = ( callback ) ->
-      state.pastViews.push( state.activeView )
-      state.activeView = incomingView
-      _trigger( "viewRender", state.activeView )
-
     if timedOffsets
-      setTimeout exit.bind( container, incomingView, $.noop ), options.exitDelay
-      setTimeout prepare.bind( container, state.activeView, incomingView, $.noop ), options.exitDelay + options.prepareDelay
-      setTimeout enter.bind( container, incomingView, $.noop ), options.exitDelay + options.prepareDelay + options.enterDelay
-      setTimeout cleanup.bind(null, onFinish ), options.exitDelay + options.prepareDelay + options.enterDelay
+      setTimeout exit.bind( container, incomingView, $.noop ), 0
+      setTimeout prepare.bind( container, state.activeView, incomingView, $.noop ), options.exitDelay
+      setTimeout enter.bind( container, incomingView, $.noop ), options.exitDelay + options.prepareDelay
+      setTimeout finishRender.bind(null, incomingView ), options.exitDelay + options.prepareDelay + options.enterDelay
 
     else
-      boundCleanup = cleanup.bind(null, onFinish )
+      boundCleanup = finishRender.bind(null, incomingView )
       boundEnter = enter.bind( container, incomingView, boundCleanup )
       boundPrepare = prepare.bind( container, state.activeView, incomingView, boundEnter )
       exit.bind( container, state.activeView, boundPrepare )()
+
+  # render the initial view
+  prepare.bind( container, state.activeView, views[initialView], enter.bind( container, views[initialView], finishRender.bind(null, views[initialView] ) ) )()
 
   switchView.views = ->
     return views
@@ -98,6 +101,7 @@ window.ViewSwitcher = ( options ) ->
   switchView.removeView = ( name ) ->
     return views.removeView( name )
 
+  # use same on/off/trigger syntax that you would with a jQuery object.
   switchView.on = _on
   switchView.off = _off
   switchView.trigger = _trigger

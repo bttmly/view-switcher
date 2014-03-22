@@ -87,13 +87,15 @@
   <script src="switcher.js"></script>
   <script>
     $(function(){
+
       var options = {};
       options.views = $( ".view-element" );
       options.container = $( ".view-container" );
-      options.initialView = "view1"
+      options.initialView = "view1";
+
       switcher = ViewSwitcher( options );
 
-      var counter = 1;
+      var counter = 2;
       var interval = setInterval(function(){
         var name = "view" + counter;
         switcher( name );
@@ -103,8 +105,9 @@
         }
       }, 2000)
 
-      switcher.on( "viewRender", function( data ) {
-        console.log( data )
+      // Supports jQuery style .on()/.off()/.trigger()
+      switcher.on( "renderComplete", function( payload ) {
+        console.log( payload )
       });
 
     });

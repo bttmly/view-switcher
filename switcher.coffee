@@ -1,109 +1,117 @@
-window.ViewSwitcher = ( options ) ->
+# only called when container is bound to "this"
+defaultTransitions = 
+  exit : ( exitingView, callback ) ->
+    this.height( this.height() )
+    exitingView.fadeOut 500, ->
+      callback()
+  prepare : ( exitingView, enteringView, callback ) ->
+    newHeight = enteringView.outerHeight() + parseInt(this.css("padding-top"), 10) + parseInt(this.css("padding-bottom"), 10)
+    this.animate
+      height : newHeight
+    , 500, ->
+      callback()
+  enter : ( enteringView, callback ) ->
+    enteringView.fadeIn 500, ->
+      callback()
 
-  # only called when container is bound to "this"
-  defaultTransitions = 
-    exit : ( exitingView, callback ) ->
-      this.height( this.height() )
-      exitingView.fadeOut 500, ->
-        callback()
-    prepare : ( exitingView, enteringView, callback ) ->
-      newHeight = enteringView.outerHeight() + parseInt(this.css("padding-top"), 10) + parseInt(this.css("padding-bottom"), 10)
-      this.animate
-        height : newHeight
-      , 500, ->
-        callback()
-    enter : ( enteringView, callback ) ->
-      enteringView.fadeIn 500, ->
-        callback()
+do ( root = do ->
+  if typeof exports isnt "undefined"
+    return exports
+  else
+    return window
+) ->
 
-  rawViews = options.views
-  container = $( options.container )
-  attrIdentifier = options.attrIdentifier or "id"
-  initialView = options.initialView
-  useHistory = options.useHistory
-  onFinish = options.onFinish
-  timedOffsets = options.timedOffsets 
+  root.ViewSwitcher = ( options ) ->
 
-  exit = options.exit or defaultTransitions.exit
-  prepare = options.prepare or defaultTransitions.prepare
-  enter = options.enter or defaultTransitions.enter
+    rawViews = options.views
+    container = $( options.container )
+    attrIdentifier = options.attrIdentifier or "id"
+    initialView = options.initialView
+    useHistory = options.useHistory
+    onFinish = options.onFinish
+    timedOffsets = options.timedOffsets 
 
-  views = {}
-  views.selectView = ( name ) ->
+    exit = options.exit or defaultTransitions.exit
+    prepare = options.prepare or defaultTransitions.prepare
+    enter = options.enter or defaultTransitions.enter
 
-    return ( this[name] or $( "" ) )
+    views = {}
+    views.selectView = ( name ) ->
 
-  views.addView = ( view ) ->
-    view = $( view )
-    name = view.attr( attrIdentifier )
-    if this[name]
-      console.error( "A view or method named #{name} is already registered on this ViewSwitcher")
-    else
-      views[name] = view
+      return ( this[name] or $( "" ) )
 
-  views.removeView = ( name ) ->
-    this[name] = undefined
+    views.addView = ( view ) ->
+      view = $( view )
+      name = view.attr( attrIdentifier )
+      if this[name]
+        console.error( "A view or method named #{name} is already registered on this ViewSwitcher")
+      else
+        views[name] = view
 
-  if rawViews instanceof jQuery
-    rawViews.each ->
-      views.addView( this )
-  else if rawViews instanceof Array
-    rawViews.forEach ( el ) ->
-      views.addView( el )
-  else if rawViews.substr
-    views.addView( rawViews )
+    views.removeView = ( name ) ->
+      this[name] = undefined
 
-  hub = $({})
-  _on = ->
-    hub.on.apply( hub, arguments )
-  _off = ->
-    hub.off.apply( hub, arguments )
-  _trigger = ->
-    hub.trigger.apply( hub, arguments )
+    if rawViews instanceof jQuery
+      rawViews.each ->
+        views.addView( this )
+    else if rawViews instanceof Array
+      rawViews.forEach ( el ) ->
+        views.addView( el )
+    else if rawViews.substr
+      views.addView( rawViews )
 
-  state =
-    activeView : $("")
-    pastViews : []
+    hub = $({})
+    _on = ->
+      hub.on.apply( hub, arguments )
+    _off = ->
+      hub.off.apply( hub, arguments )
+    _trigger = ->
+      hub.trigger.apply( hub, arguments )
 
-  finishRender = ( incomingView ) ->
-    state.pastViews.push( state.activeView )
-    state.activeView = incomingView
-    _trigger( "renderComplete", state.activeView )
+    state =
+      activeView : $("")
+      pastViews : []
 
-  switchView = ( incomingViewName ) ->
-    
-    incomingView = views[incomingViewName]
+    finishRender = ( incomingView ) ->
+      state.pastViews.push( state.activeView )
+      state.activeView = incomingView
+      _trigger( "renderComplete", state.activeView )
 
-    if timedOffsets
-      setTimeout exit.bind( container, incomingView, $.noop ), 0
-      setTimeout prepare.bind( container, state.activeView, incomingView, $.noop ), options.exitDelay
-      setTimeout enter.bind( container, incomingView, $.noop ), options.exitDelay + options.prepareDelay
-      setTimeout finishRender.bind(null, incomingView ), options.exitDelay + options.prepareDelay + options.enterDelay
+    switchView = ( incomingViewName ) ->
 
-    else
-      boundCleanup = finishRender.bind(null, incomingView )
-      boundEnter = enter.bind( container, incomingView, boundCleanup )
-      boundPrepare = prepare.bind( container, state.activeView, incomingView, boundEnter )
-      exit.bind( container, state.activeView, boundPrepare )()
+      incomingView = views[incomingViewName]
 
-  # render the initial view
-  prepare.bind( container, state.activeView, views[initialView], enter.bind( container, views[initialView], finishRender.bind(null, views[initialView] ) ) )()
+      # Not sure if this exactly works.
+      if timedOffsets
+        setTimeout exit.bind( container, incomingView, $.noop ), 0
+        setTimeout prepare.bind( container, state.activeView, incomingView, $.noop ), options.exitDelay
+        setTimeout enter.bind( container, incomingView, $.noop ), options.exitDelay + options.prepareDelay
+        setTimeout finishRender.bind(null, incomingView ), options.exitDelay + options.prepareDelay + options.enterDelay
 
-  switchView.views = ->
-    return views
+      else
+        boundCleanup = finishRender.bind(null, incomingView )
+        boundEnter = enter.bind( container, incomingView, boundCleanup )
+        boundPrepare = prepare.bind( container, state.activeView, incomingView, boundEnter )
+        exit.bind( container, state.activeView, boundPrepare )()
 
-  switchView.addView = ( view ) ->
-    return views.addView( view )
+    # render the initial view
+    prepare.bind( container, state.activeView, views[initialView], enter.bind( container, views[initialView], finishRender.bind(null, views[initialView] ) ) )()
 
-  switchView.selectView = ( name ) ->
-    return views.selectById( name )
+    switchView.views = ->
+      return views
 
-  switchView.removeView = ( name ) ->
-    return views.removeView( name )
+    switchView.addView = ( view ) ->
+      return views.addView( view )
 
-  # use same on/off/trigger syntax that you would with a jQuery object.
-  switchView.on = _on
-  switchView.off = _off
-  switchView.trigger = _trigger
+    switchView.selectView = ( name ) ->
+      return views.selectById( name )
 
-  return switchView
+    switchView.removeView = ( name ) ->
+      return views.removeView( name )
+
+    # use same on/off/trigger syntax that you would with a jQuery object.
+    switchView.on = _on
+    switchView.off = _off
+    switchView.trigger = _trigger
+
+    return switchView

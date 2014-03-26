@@ -15,7 +15,13 @@
     font-family: "Avenir Next", "Avenir", "Helvetica Neue", sans-serif;
   }
 
-  .view-container {
+  .subtitle {
+    display: block;
+    font-weight: 400;
+    font-size: 75%;
+  }
+
+  .container {
     width: 80%;
     margin: 2rem auto;
     padding: 2rem;
@@ -23,16 +29,25 @@
     box-shadow: inset 1px 1px 1px rgba(51, 51, 51, .25);
     background: #f5f5f5;
     border-radius: 6px;
+    position: relative;
+    transition: all .4 ease-in-out;
   }
 
   .view-element {
-    display: none;
     padding: 2rem;
     min-height: 4rem;
-    width: 100%;
+    width: -webkit-calc(100% - 4rem);
+    width: calc(100% - 4rem);
     color: white;
     text-align: center;
     border-radius: 4px;
+    position: absolute;
+    left: -100%;
+    transition: all .4 ease-in-out;
+  }
+
+  .view-container {
+    overflow: hidden;
   }
 
   #view1 {
@@ -61,7 +76,7 @@
 
   <div class="wrapper">
 
-    <div class="view-container">
+    <div class="container view-container">
 
       <div class="view-element" id="view1">
         <h2>View 1</h2>
@@ -81,6 +96,13 @@
 
     </div>
 
+    <div class="container">
+      <h2>Static Content Below View
+        <span class="subtitle">This just says right here.</span>
+      </h2>
+
+    </div>
+
   </div>
 
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -92,6 +114,44 @@
       options.views = $( ".view-element" );
       options.container = $( ".view-container" );
       options.initialView = "view1";
+
+      options.exit = function( exitingView, callback ) {
+        exitingView.css({
+          "transition-duration": ".4s",
+          "left": "-100%"
+        });
+        setTimeout(function(){
+          callback();
+        }, 400);
+      };
+
+      options.prepare = function( exitingView, enteringView, callback ) {
+        var newHeight = enteringView.outerHeight() + parseInt(this.css("padding-top"), 10) + parseInt(this.css("padding-bottom"), 10)
+        $( this ).css({
+          "transition-duration": ".4s",
+          "height": newHeight + "px"
+        });
+        $( exitingView ).css({
+          "transition-duration": 0,
+          "right": "-100%",
+          "left": ""
+        });
+        setTimeout(function(){
+          callback();
+        }, 400);
+      };
+
+
+
+      options.enter = function( enteringView, callback ) {
+        enteringView.css({
+          "transition-duration": ".4s",
+          "left": "2rem"
+        });
+        setTimeout(function(){
+          callback();
+        }, 400);
+      };
 
       switcher = ViewSwitcher( options );
 

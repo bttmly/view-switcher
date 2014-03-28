@@ -10,13 +10,7 @@
       });
     },
     prepare: function(exitingView, enteringView, callback) {
-      var newHeight;
-      newHeight = enteringView.outerHeight() + parseInt(this.css("padding-top"), 10) + parseInt(this.css("padding-bottom"), 10);
-      return this.animate({
-        height: newHeight
-      }, 500, function() {
-        return callback();
-      });
+      return callback();
     },
     enter: function(enteringView, callback) {
       return enteringView.fadeIn(500, function() {
@@ -25,100 +19,96 @@
     }
   };
 
-  (function(root) {
-    return root.ViewSwitcher = function(options) {
-      var attrIdentifier, container, enter, exit, finishRender, hub, initialView, onFinish, prepare, rawViews, state, switchView, timedOffsets, useHistory, views, _off, _on, _trigger;
-      rawViews = options.views;
-      container = $(options.container);
-      attrIdentifier = options.attrIdentifier || "id";
-      initialView = options.initialView;
-      useHistory = options.useHistory;
-      onFinish = options.onFinish;
-      timedOffsets = options.timedOffsets;
-      exit = options.exit || defaultTransitions.exit;
-      prepare = options.prepare || defaultTransitions.prepare;
-      enter = options.enter || defaultTransitions.enter;
-      views = {};
-      views.selectView = function(name) {
-        return this[name] || $("");
-      };
-      views.addView = function(view) {
+  (function($, root) {
+    var ViewSwitcher;
+    ViewSwitcher = (function() {
+      function ViewSwitcher(options) {
+        var rawViews, switcher;
+        this.views = {};
+        this.hub = $({});
+        this.timedOffsets = options.timedOffsets, this.attrIdentifier = options.attrIdentifier, this.container = options.container, this.initialView = options.initialView;
+        this.attrIdentifier = options.attrIdentifier || "id";
+        this.state = {
+          activeView: $(""),
+          pastViews: []
+        };
+        this.exit = options.exit || defaultTransitions.exit;
+        this.prepare = options.prepare || defaultTransitions.prepare;
+        this.enter = options.enter || defaultTransitions.enter;
+        switcher = this;
+        rawViews = options.views;
+        if (rawViews instanceof jQuery) {
+          rawViews.each(function() {
+            return switcher.addView(this);
+          });
+        } else if (rawViews instanceof Array) {
+          rawViews.forEach(function(el) {
+            return switcher.addView(el);
+          });
+        } else if (rawViews.substr) {
+          switcher.addView(rawViews);
+        }
+        this.prepare.bind(this.container, this.state.activeView, this.views[this.initialView], this.enter.bind(this.container, this.views[this.initialView], this.finishRender.bind(this, this.views[this.initialView])))();
+      }
+
+      ViewSwitcher.prototype.addView = function(view) {
         var name;
         view = $(view);
-        name = view.attr(attrIdentifier);
-        if (this[name]) {
+        name = view.attr(this.attrIdentifier);
+        if (this.views[name]) {
           return console.error("A view or method named " + name + " is already registered on this ViewSwitcher");
         } else {
-          return views[name] = view;
+          return this.views[name] = view;
         }
       };
-      views.removeView = function(name) {
-        return this[name] = void 0;
+
+      ViewSwitcher.prototype.removeView = function(name) {
+        return this.views[name] = void 0;
       };
-      if (rawViews instanceof jQuery) {
-        rawViews.each(function() {
-          return views.addView(this);
-        });
-      } else if (rawViews instanceof Array) {
-        rawViews.forEach(function(el) {
-          return views.addView(el);
-        });
-      } else if (rawViews.substr) {
-        views.addView(rawViews);
-      }
-      hub = $({});
-      _on = function() {
-        return hub.on.apply(hub, arguments);
+
+      ViewSwitcher.prototype.selectView = function(name) {
+        return this.views[name] || $("");
       };
-      _off = function() {
-        return hub.off.apply(hub, arguments);
-      };
-      _trigger = function() {
-        return hub.trigger.apply(hub, arguments);
-      };
-      state = {
-        activeView: $(""),
-        pastViews: []
-      };
-      finishRender = function(incomingView) {
-        state.pastViews.push(state.activeView);
-        state.activeView = incomingView;
-        return _trigger("renderComplete", state.activeView);
-      };
-      switchView = function(incomingViewName) {
+
+      ViewSwitcher.prototype.switchView = function(incomingViewName) {
         var boundCleanup, boundEnter, boundPrepare, incomingView;
-        incomingView = views[incomingViewName];
-        if (timedOffsets) {
-          setTimeout(exit.bind(container, incomingView, $.noop), 0);
-          setTimeout(prepare.bind(container, state.activeView, incomingView, $.noop), options.exitDelay);
-          setTimeout(enter.bind(container, incomingView, $.noop), options.exitDelay + options.prepareDelay);
-          return setTimeout(finishRender.bind(null, incomingView), options.exitDelay + options.prepareDelay + options.enterDelay);
+        incomingView = this.views[incomingViewName];
+        if (this.timedOffsets) {
+          setTimeout(this.exit.bind(this.container, incomingView, $.noop), 0);
+          setTimeout(this.prepare.bind(this.container, this.state.activeView, incomingView, $.noop), options.exitDelay);
+          setTimeout(this.enter.bind(this.container, incomingView, $.noop), options.exitDelay + options.prepareDelay);
+          return setTimeout(this.finishRender.bind(this, incomingView), options.exitDelay + options.prepareDelay + options.enterDelay);
         } else {
-          boundCleanup = finishRender.bind(null, incomingView);
-          boundEnter = enter.bind(container, incomingView, boundCleanup);
-          boundPrepare = prepare.bind(container, state.activeView, incomingView, boundEnter);
-          return exit.bind(container, state.activeView, boundPrepare)();
+          boundCleanup = this.finishRender.bind(this, incomingView);
+          boundEnter = this.enter.bind(this.container, incomingView, boundCleanup);
+          boundPrepare = this.prepare.bind(this.container, this.state.activeView, incomingView, boundEnter);
+          return this.exit.bind(this.container, this.state.activeView, boundPrepare)();
         }
       };
-      prepare.bind(container, state.activeView, views[initialView], enter.bind(container, views[initialView], finishRender.bind(null, views[initialView])))();
-      switchView.views = function() {
-        return views;
+
+      ViewSwitcher.prototype.finishRender = function(incomingView) {
+        this.state.pastViews.push(this.state.activeView);
+        this.state.activeView = incomingView;
+        return this.trigger("renderComplete", this.state.activeView);
       };
-      switchView.addView = function(view) {
-        return views.addView(view);
+
+      ViewSwitcher.prototype.on = function() {
+        return this.hub.on.apply(this.hub, arguments);
       };
-      switchView.selectView = function(name) {
-        return views.selectById(name);
+
+      ViewSwitcher.prototype.off = function() {
+        return this.hub.off.apply(this.hub, arguments);
       };
-      switchView.removeView = function(name) {
-        return views.removeView(name);
+
+      ViewSwitcher.prototype.trigger = function() {
+        return this.hub.trigger.apply(this.hub, arguments);
       };
-      switchView.on = _on;
-      switchView.off = _off;
-      switchView.trigger = _trigger;
-      return switchView;
-    };
-  })((function() {
+
+      return ViewSwitcher;
+
+    })();
+    return root.ViewSwitcher = ViewSwitcher;
+  })(jQuery, (function() {
     if (typeof exports !== "undefined") {
       return exports;
     } else {

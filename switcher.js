@@ -75,7 +75,6 @@
 
       ViewSwitcher.prototype.switchTo = function(incomingViewName) {
         var boundCleanup, boundEnter, boundPrepare, incomingView;
-        console.log(incomingViewName);
         if (this.inTransition) {
           this.queue = incomingViewName;
           return false;
@@ -105,7 +104,7 @@
         this.inTransition = false;
         if (this.queue) {
           this.switchTo(this.queue);
-          return this.queue = "";
+          return this.queue = false;
         }
       };
 

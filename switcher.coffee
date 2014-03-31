@@ -72,8 +72,6 @@ do ( $ = jQuery, root = do ->
 
     switchTo : ( incomingViewName ) ->
 
-      console.log incomingViewName
-
       if this.inTransition
         this.queue = incomingViewName
         return false
@@ -99,10 +97,9 @@ do ( $ = jQuery, root = do ->
       this.state.activeView = incomingView
       this.trigger( "renderComplete", view: this.state.activeView )
       this.inTransition = false
-
       if this.queue
         this.switchTo( this.queue )
-        this.queue = ""
+        this.queue = false
 
     on : ->
       this.hub.on.apply( this.hub, arguments )

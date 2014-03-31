@@ -27,8 +27,10 @@ do ( $ = jQuery, root = do ->
     constructor : ( options ) ->
       this.views = {}
       this.hub = $({})
-      {@timedOffsets, @attrIdentifier, @container, @initialView} = options
-      this.attrIdentifier = options.attrIdentifier or "id"
+      {@timedOffsets, @container, @initialView} = options
+      this.identifyingAttr = options.identifyingAttr or "id"
+      this.inTransition = false
+      this.queue = []
 
       this.state =       
         activeView : $("")
@@ -55,7 +57,7 @@ do ( $ = jQuery, root = do ->
 
     addView : ( view ) ->
       view = $( view )
-      name = view.attr( this.attrIdentifier )
+      name = view.attr( this.identifyingAttr )
       if this.views[name]
         console.error( "A view or method named #{name} is already registered on this ViewSwitcher")
       else
@@ -67,8 +69,14 @@ do ( $ = jQuery, root = do ->
     selectView : ( name ) ->
       return ( this.views[name] or $( "" ) )
 
-    switchView : ( incomingViewName ) ->
+    switchTo : ( incomingViewName ) ->
+
+      if this.inTransition
+        this.queue.push( incomingViewName )
+        return false
+
       incomingView = this.views[incomingViewName]
+      this.inTransition = true
       # timedOffset option needs to be tested!
       if this.timedOffsets
         setTimeout this.exit.bind( this.container, incomingView, $.noop ), 0
@@ -81,10 +89,16 @@ do ( $ = jQuery, root = do ->
         boundPrepare = this.prepare.bind( this.container, this.state.activeView, incomingView, boundEnter )
         this.exit.bind( this.container, this.state.activeView, boundPrepare )()
 
+      return true
+
     finishRender : ( incomingView ) ->
       this.state.pastViews.push( this.state.activeView )
       this.state.activeView = incomingView
-      this.trigger( "renderComplete", this.state.activeView )
+      this.trigger( "renderComplete", view: this.state.activeView )
+      this.inTransition = false
+
+      if this.queue.length
+        this.switchTo( this.queue.shift() )
 
     on : ->
       this.hub.on.apply( this.hub, arguments )

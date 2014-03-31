@@ -47,26 +47,40 @@
     transition: all .4 ease-in-out;
   }
 
+  .view-links {
+    width: 80%;
+    padding: 0;
+    margin: 2rem auto;
+    list-style-type: none;
+    display: flex;
+    flex-direction: row;
+  }
+
+  .view-links li {
+    flex: 1;
+    text-align: center;
+  }
+
   .view-container {
     overflow: hidden;
   }
 
-  #view1 {
+  .view1 {
     background: #e74c3c;
     height: 8rem;
   }
 
-  #view2 {
+  .view2 {
     background: #e67e22;
     height: 20rem;
   }
 
-  #view3 {
+  .view3 {
     background: #f1c40f;
     height: 12rem;
   }
 
-  #view4 {
+  .view4 {
     background: #2ecc71;
     height: 16rem;
   }
@@ -76,22 +90,36 @@
 <body>
 
   <div class="wrapper">
-
+    <ul class=" view-links">
+      <li>
+        <a href="#view1">View 1</a>
+      </li>
+      <li>
+        <a href="#view2">View 2</a>
+      </li>
+      <li>
+        <a href="#view3">View 3</a>
+      </li>
+      <li>
+        <a href="#view4">View 4</a>
+      </li>
+    </ul>
+    
     <div class="container view-container">
 
-      <div class="view-element" id="view1">
+      <div class="view-element view1" data-view-name="view1">
         <h2>View 1</h2>
       </div>
 
-      <div class="view-element" id="view2">
+      <div class="view-element view2" data-view-name="view2">
         <h2>View 2</h2>
       </div>
 
-      <div class="view-element" id="view3">
+      <div class="view-element view3" data-view-name="view3">
         <h2>View 3</h2>
       </div>
 
-      <div class="view-element" id="view4">
+      <div class="view-element view4" data-view-name="view4">
         <h2>View 4</h2>
       </div>
 
@@ -104,6 +132,21 @@
 
     </div>
 
+    <ul class=" view-links">
+      <li>
+        <a href="#view1">View 1</a>
+      </li>
+      <li>
+        <a href="#view2">View 2</a>
+      </li>
+      <li>
+        <a href="#view3">View 3</a>
+      </li>
+      <li>
+        <a href="#view4">View 4</a>
+      </li>
+    </ul>
+
   </div>
 
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -115,22 +158,23 @@
       options.views = $( ".view-element" );
       options.container = $( ".view-container" );
       options.initialView = "view1";
+      options.identifyingAttr = "data-view-name";
 
       options.exit = function( exitingView, callback ) {
         exitingView.css({
-          "transition-duration": ".4s",
+          "transition-duration": "1s",
           "opacity": 0,
           "transform": "translateX(-150%)"
         });
         setTimeout(function(){
           callback();
-        }, 200);
+        }, 1000);
       };
 
       options.prepare = function( exitingView, enteringView, callback ) {
         var newHeight = enteringView.outerHeight() + parseInt(this.css("padding-top"), 10) + parseInt(this.css("padding-bottom"), 10)
         $( this ).css({
-          "transition-duration": ".4s",
+          "transition-duration": "1s",
           "height": newHeight + "px"
         });
         enteringView.css({
@@ -139,35 +183,46 @@
         });
         setTimeout(function(){
           callback();
-        }, 200);
+        }, 1000);
       };
 
       options.enter = function( enteringView, callback ) {
         enteringView.css({
-          "transition-duration": ".4s",
+          "transition-duration": "1s",
           "opacity": 1,
           "transform": "translateX(0)"
         });
         setTimeout(function(){
           callback();
-        }, 200);
+        }, 1000);
       };
 
       switcher = new ViewSwitcher( options );
 
-      var counter = 2;
-      var interval = setInterval(function(){
-        var name = "view" + counter;
-        switcher.switchView( name );
-        counter += 1;
-        if ( counter > 4 ) {
-          counter = 1
+      $( window ).on("hashchange", function( event ){
+        event.preventDefault();
+        var name;
+        if (location.hash === "" || location.hash === "#") {
+          name = options.initialView;
+        } else {
+          name = location.hash.substring( 1 );
         }
-      }, 2000)
+        switcher.switchTo( name );
+      });
+
+      // var counter = 2;
+      // var interval = setInterval(function(){
+      //   var name = "view" + counter;
+      //   switcher.switchView( name );
+      //   counter += 1;
+      //   if ( counter > 4 ) {
+      //     counter = 1
+      //   }
+      // }, 2000)
 
       // Supports jQuery style .on()/.off()/.trigger()
-      switcher.on( "renderComplete", function( payload ) {
-        console.log( payload )
+      switcher.on( "renderComplete", function( event, data ) {
+        console.log( data.view );
       });
 
     });

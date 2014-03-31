@@ -26,8 +26,10 @@
         var rawViews, switcher;
         this.views = {};
         this.hub = $({});
-        this.timedOffsets = options.timedOffsets, this.attrIdentifier = options.attrIdentifier, this.container = options.container, this.initialView = options.initialView;
-        this.attrIdentifier = options.attrIdentifier || "id";
+        this.timedOffsets = options.timedOffsets, this.container = options.container, this.initialView = options.initialView;
+        this.identifyingAttr = options.identifyingAttr || "id";
+        this.inTransition = false;
+        this.queue = [];
         this.state = {
           activeView: $(""),
           pastViews: []
@@ -54,7 +56,7 @@
       ViewSwitcher.prototype.addView = function(view) {
         var name;
         view = $(view);
-        name = view.attr(this.attrIdentifier);
+        name = view.attr(this.identifyingAttr);
         if (this.views[name]) {
           return console.error("A view or method named " + name + " is already registered on this ViewSwitcher");
         } else {
@@ -70,26 +72,38 @@
         return this.views[name] || $("");
       };
 
-      ViewSwitcher.prototype.switchView = function(incomingViewName) {
+      ViewSwitcher.prototype.switchTo = function(incomingViewName) {
         var boundCleanup, boundEnter, boundPrepare, incomingView;
+        if (this.inTransition) {
+          this.queue.push(incomingViewName);
+          return false;
+        }
         incomingView = this.views[incomingViewName];
+        this.inTransition = true;
         if (this.timedOffsets) {
           setTimeout(this.exit.bind(this.container, incomingView, $.noop), 0);
           setTimeout(this.prepare.bind(this.container, this.state.activeView, incomingView, $.noop), options.exitDelay);
           setTimeout(this.enter.bind(this.container, incomingView, $.noop), options.exitDelay + options.prepareDelay);
-          return setTimeout(this.finishRender.bind(this, incomingView), options.exitDelay + options.prepareDelay + options.enterDelay);
+          setTimeout(this.finishRender.bind(this, incomingView), options.exitDelay + options.prepareDelay + options.enterDelay);
         } else {
           boundCleanup = this.finishRender.bind(this, incomingView);
           boundEnter = this.enter.bind(this.container, incomingView, boundCleanup);
           boundPrepare = this.prepare.bind(this.container, this.state.activeView, incomingView, boundEnter);
-          return this.exit.bind(this.container, this.state.activeView, boundPrepare)();
+          this.exit.bind(this.container, this.state.activeView, boundPrepare)();
         }
+        return true;
       };
 
       ViewSwitcher.prototype.finishRender = function(incomingView) {
         this.state.pastViews.push(this.state.activeView);
         this.state.activeView = incomingView;
-        return this.trigger("renderComplete", this.state.activeView);
+        this.trigger("renderComplete", {
+          view: this.state.activeView
+        });
+        this.inTransition = false;
+        if (this.queue.length) {
+          return this.switchTo(this.queue.shift());
+        }
       };
 
       ViewSwitcher.prototype.on = function() {

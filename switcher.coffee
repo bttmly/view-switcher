@@ -27,10 +27,10 @@ do ( $ = jQuery, root = do ->
     constructor : ( options ) ->
       this.views = {}
       this.hub = $({})
-      {@timedOffsets, @container, @initialView} = options
+      {@timedOffsets, @container, @defaultView} = options
       this.identifyingAttr = options.identifyingAttr or "id"
       this.inTransition = false
-      this.queue = []
+      this.queue = false
 
       this.state =       
         activeView : $("")
@@ -53,7 +53,8 @@ do ( $ = jQuery, root = do ->
         switcher.addView( rawViews )
 
       # render the initial view
-      this.prepare.bind( this.container, this.state.activeView, this.views[this.initialView], this.enter.bind( this.container, this.views[this.initialView], this.finishRender.bind(this, this.views[this.initialView] ) ) )()
+      initialView = this.views[(location.hash.substr(1) or defaultView)]
+      this.prepare.bind( this.container, this.state.activeView, initialView, this.enter.bind( this.container, initialView, this.finishRender.bind(this, initialView ) ) )()
 
     addView : ( view ) ->
       view = $( view )
@@ -71,8 +72,10 @@ do ( $ = jQuery, root = do ->
 
     switchTo : ( incomingViewName ) ->
 
+      console.log incomingViewName
+
       if this.inTransition
-        this.queue.push( incomingViewName )
+        this.queue = incomingViewName
         return false
 
       incomingView = this.views[incomingViewName]
@@ -97,8 +100,9 @@ do ( $ = jQuery, root = do ->
       this.trigger( "renderComplete", view: this.state.activeView )
       this.inTransition = false
 
-      if this.queue.length
-        this.switchTo( this.queue.shift() )
+      if this.queue
+        this.switchTo( this.queue )
+        this.queue = ""
 
     on : ->
       this.hub.on.apply( this.hub, arguments )

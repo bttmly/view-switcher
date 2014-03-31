@@ -23,13 +23,13 @@
     var ViewSwitcher;
     ViewSwitcher = (function() {
       function ViewSwitcher(options) {
-        var rawViews, switcher;
+        var initialView, rawViews, switcher;
         this.views = {};
         this.hub = $({});
-        this.timedOffsets = options.timedOffsets, this.container = options.container, this.initialView = options.initialView;
+        this.timedOffsets = options.timedOffsets, this.container = options.container, this.defaultView = options.defaultView;
         this.identifyingAttr = options.identifyingAttr || "id";
         this.inTransition = false;
-        this.queue = [];
+        this.queue = false;
         this.state = {
           activeView: $(""),
           pastViews: []
@@ -50,7 +50,8 @@
         } else if (rawViews.substr) {
           switcher.addView(rawViews);
         }
-        this.prepare.bind(this.container, this.state.activeView, this.views[this.initialView], this.enter.bind(this.container, this.views[this.initialView], this.finishRender.bind(this, this.views[this.initialView])))();
+        initialView = this.views[location.hash.substr(1) || defaultView];
+        this.prepare.bind(this.container, this.state.activeView, initialView, this.enter.bind(this.container, initialView, this.finishRender.bind(this, initialView)))();
       }
 
       ViewSwitcher.prototype.addView = function(view) {
@@ -74,8 +75,9 @@
 
       ViewSwitcher.prototype.switchTo = function(incomingViewName) {
         var boundCleanup, boundEnter, boundPrepare, incomingView;
+        console.log(incomingViewName);
         if (this.inTransition) {
-          this.queue.push(incomingViewName);
+          this.queue = incomingViewName;
           return false;
         }
         incomingView = this.views[incomingViewName];
@@ -101,8 +103,9 @@
           view: this.state.activeView
         });
         this.inTransition = false;
-        if (this.queue.length) {
-          return this.switchTo(this.queue.shift());
+        if (this.queue) {
+          this.switchTo(this.queue);
+          return this.queue = "";
         }
       };
 

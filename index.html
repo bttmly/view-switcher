@@ -157,70 +157,59 @@
       var options = {};
       options.views = $( ".view-element" );
       options.container = $( ".view-container" );
-      options.initialView = "view1";
+      options.defaultView = "view1";
       options.identifyingAttr = "data-view-name";
+
+      var time = 1.0;
 
       options.exit = function( exitingView, callback ) {
         exitingView.css({
-          "transition-duration": "1s",
+          "transition-duration": time + "s",
           "opacity": 0,
-          "transform": "translateX(-150%)"
+          "transform": "translate3d(-150%, 0, 0)"
         });
         setTimeout(function(){
           callback();
-        }, 1000);
+        }, time * 1000);
       };
 
       options.prepare = function( exitingView, enteringView, callback ) {
         var newHeight = enteringView.outerHeight() + parseInt(this.css("padding-top"), 10) + parseInt(this.css("padding-bottom"), 10)
         $( this ).css({
-          "transition-duration": "1s",
+          "transition-duration": time + "s",
           "height": newHeight + "px"
         });
         enteringView.css({
           "transition-duration": 0,
-          "transform": "translateX(150%)"
+          "transform": "translate3d(150%, 0, 0)"
         });
         setTimeout(function(){
           callback();
-        }, 1000);
+        }, time * 1000);
       };
 
       options.enter = function( enteringView, callback ) {
         enteringView.css({
-          "transition-duration": "1s",
+          "transition-duration": time + "s",
           "opacity": 1,
-          "transform": "translateX(0)"
+          "transform": "translate3d(0, 0, 0)"
         });
         setTimeout(function(){
           callback();
-        }, 1000);
+        }, time * 1000);
       };
 
       switcher = new ViewSwitcher( options );
 
+      function doSwitch() {
+        var viewName = ( location.hash.substr(1) || options.defaultView );
+        switcher.switchTo( viewName );
+      }
+
       $( window ).on("hashchange", function( event ){
-        event.preventDefault();
-        var name;
-        if (location.hash === "" || location.hash === "#") {
-          name = options.initialView;
-        } else {
-          name = location.hash.substring( 1 );
-        }
-        switcher.switchTo( name );
+        doSwitch();
       });
 
-      // var counter = 2;
-      // var interval = setInterval(function(){
-      //   var name = "view" + counter;
-      //   switcher.switchView( name );
-      //   counter += 1;
-      //   if ( counter > 4 ) {
-      //     counter = 1
-      //   }
-      // }, 2000)
-
-      // Supports jQuery style .on()/.off()/.trigger()
       switcher.on( "renderComplete", function( event, data ) {
         console.log( data.view );
       });
